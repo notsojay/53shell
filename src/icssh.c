@@ -260,7 +260,7 @@ evalShell(Shell_Info *currShell)
 	// Main loop
     // Print the prompt & wait for the user to enter commands string:
 	while( (currShell->prompt = getShellPrompt()) != NULL && 
-		   (currShell->line = readline(currShell->prompt)) != NULL ) 
+	       (currShell->line = readline(currShell->prompt)) != NULL ) 
 	{
         	// MAGIC HAPPENS! Command string is parsed into a job struct
         	// Will print out error message if command string is invalid
