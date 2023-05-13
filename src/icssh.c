@@ -192,18 +192,22 @@ void
 checkMainCmdArgs(int argc, char* argv[], Shell_Info *currShell)
 {
 	/*
-		The 53shell main optionally accepts 1 command-line argument. This argument will set the max_bgprocs variable (default: -1). Use this variable to restrict the number of background processes allowed by your shell at one time. The default value of -1 represents unlimited background processes. If the command-line argument is specified, N, then at most N bg processes can be run at one time.
+		The 53shell main optionally accepts 1 command-line argument.
+		This argument will set the max_bgprocs variable (default: -1). 
+		Use this variable to restrict the number of background processes allowed by your shell at one time. 
+		The default value of -1 represents unlimited background processes. 
+		If the command-line argument is specified, N, then at most N bg processes can be run at one time.
 	*/
 	if(argc > 1)
 	{
 		int check = atoi(argv[1]);
 		
-        if(check != 0)
+        	if(check != 0)
 			currShell->max_bgprocs = check;
-        else 
-            printf("Invalid command line argument value\n"), 
+        	else 
+            		printf("Invalid command line argument value\n"), 
 			exit(EXIT_FAILURE);
-    }
+    	}
 }
 
 char*
@@ -279,7 +283,7 @@ evalShell(Shell_Info *currShell)
 			reapTerminatedBgJobs(currShell);
 
 		if(currShell->job->bg) 
-    		(currShell->job->nproc - 1 > 0) ? 
+    			(currShell->job->nproc - 1 > 0) ? 
 				execMultBgProcs(currShell) : execSingleBgProcs(currShell);
 		else 
    			(currShell->job->nproc - 1 > 0) ? 
