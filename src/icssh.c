@@ -155,7 +155,7 @@ static list_t *g_bgJobList = NULL;
 *************************************************************
 
 
- 	     Shell Program entrance & Main Part
+ 	        Shell Program entrance & Main Part
 	 
 	 
 *************************************************************
@@ -331,7 +331,7 @@ freeMemory(Shell_Info *currShell)
 *************************************************************
 
  	
-	    Foreground Job & Built-in commands
+	       Foreground Job & Built-in commands
 	
 
 *************************************************************
@@ -626,7 +626,7 @@ getNumOfCmds()
 *************************************************************
 
 
- 		      Background Job
+ 		             Background Job
 
 
 *************************************************************
