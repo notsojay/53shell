@@ -170,8 +170,8 @@ main(int argc, char* argv[])
 	currShell.max_bgprocs = -1;
 	g_isAnyBgJobTerminated = 0;
 	g_bgJobList = CreateList( &bgJobListComparator,
-				  			  &bgJobListPrinter, 
-			          		  &bgJobListDeleter    );
+				  &bgJobListPrinter, 
+			          &bgJobListDeleter    );
 
 #ifdef GS
     rl_outstream = fopen("/dev/null", "w");
@@ -214,35 +214,35 @@ getShellPrompt()
 	char hostBuffer[BUFFER_SIZE];
 	char* username = getenv("USER");
 
-    if( !getcwd(cwdBuffer, sizeof(cwdBuffer)) ) 
+   	if( !getcwd(cwdBuffer, sizeof(cwdBuffer)) ) 
 		return fprintf(stderr, DIR_ERR), NULL;
 
 	if(gethostname(hostBuffer, sizeof(hostBuffer)) < 0) 
        		return fprintf(stderr, "Error getting hostname\n"), NULL;
 
-    if(!username) 
-	username = "";
+    	if(!username) 
+		username = "";
 
 	int length = snprintf( NULL, 
-						   0, 
-			       		   ICS_GRE "[" 
-			       	 	   ICS_MAG "%s@" 
-			      	 	   ICS_BLU "%s:" 
-			       		   ICS_MAG "%s" 
-			       		   ICS_GRE "(master)~]$ " 
-			       		   ICS_NRM, 
-			       		   username, hostBuffer, cwdBuffer );
+			       0, 
+			       ICS_GRE "[" 
+			       ICS_MAG "%s@" 
+			       ICS_BLU "%s:" 
+			       ICS_MAG "%s" 
+			       ICS_GRE "(master)~]$ " 
+			       ICS_NRM, 
+			       username, hostBuffer, cwdBuffer );
 
-	char* prompt = (char*)malloc( (length+1) * sizeof(char) ); // +1 for the null-terminator
+    	char* prompt = (char*)malloc( (length+1) * sizeof(char) ); // +1 for the null-terminator
 
-    sprintf( prompt,
-	    	 ICS_GRE "[" 
-	    	 ICS_GRE "%s@" 
+    	sprintf( prompt,
+	     	 ICS_GRE "[" 
+	     	 ICS_GRE "%s@" 
 	     	 ICS_BLU "%s:" 
 	     	 ICS_MAG "%s" 
 	     	 ICS_GRE "(master)~]$ " 
 	     	 ICS_NRM, 
-			 username, hostBuffer, cwdBuffer );
+	     	 username, hostBuffer, cwdBuffer );
 
     	return prompt;
 #else
@@ -262,7 +262,7 @@ evalShell(Shell_Info *currShell)
         	// Will print out error message if command string is invalid
 		currShell->job = validate_input(currShell->line);
 
-        if(currShell->job == NULL)  // Command was empty string or invalid
+        	if(currShell->job == NULL)  // Command was empty string or invalid
 		{
 			free(currShell->line);
 			continue;
