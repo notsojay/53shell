@@ -14,20 +14,22 @@
 #include <errno.h>
 #include <string.h>
 
-#ifdef DEBUG
-#define DEBUG_FLAG 1
-#else
-#define DEBUG_FLAG 0
-#endif
+// #ifdef DEBUG
+// #define DEBUG_FLAG 1
+// #else
+// #define DEBUG_FLAG 0
+// #endif
 
 /*************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
 
-Set up the necessary functions and global variables/constants
+
+						   Set up
 	 
-	 |  					|						|
-	 V 						V 						V
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -108,27 +110,27 @@ static volatile sig_atomic_t g_currYear;
 static volatile sig_atomic_t g_currWeekDay;
 
 static const char *G_WEEKDAY[] = {
-	"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+	"Sun\0", "Mon\0", "Tue\0", "Wed\0", "Thu\0", "Fri\0", "Sat\0"
 };
 
 static const char *G_MONTH[] = {
-	"Jan", "Feb", "Mar",
-	"Apr", "May", "Jun",
-	"Jul", "Aug", "Sep",
-	"Oct", "Nov", "Dec"
+	"Jan\0", "Feb\0", "Mar\0",
+	"Apr\0", "May\0", "Jun\0",
+	"Jul\0", "Aug\0", "Sep\0",
+	"Oct\0", "Nov\0", "Dec\0"
 };
 
 // Global Constant for the full list of names of foreground Job built-in commands:
 static const char *G_BUILTIN_CMD_ROLES[] = {
-	"exit",
-	"cd",
-	"pwd",
-	"estatus",
-	"bglist",
-	"fg",
-	"ascii53",
-	"bgcount",
-	"flag_sigchld"
+	"exit\0",
+	"cd\0",
+	"pwd\0",
+	"estatus\0",
+	"bglist\0",
+	"fg\0",
+	"ascii53\0",
+	"bgcount\0",
+	"flag_sigchld\0"
 };
 
 // Global Constant function jump table for foreground Job built-in commands: 
@@ -147,14 +149,24 @@ static const int8_t (*G_BUILTIN_CMD_MAP[])(Shell_Info*) = {
 // Global variable for storing information of background jobs in running:
 static list_t *g_bgJobList = NULL;
 
+static const char *KAWAYI[] = {
+	"(ﾉ˚Д˚)ﾉ\0", "ლ(╹◡╹ლ)\0", "ヾ(⁍̴̆◡⁍̴̆.)ﾉ\0", 
+	
+	"(❁´◡`❁)*\0", "(┛ಠ_ಠ)┛彡\0", "ヾ(ಠل͜ಠ)ﾉ\0",
+	
+	"(๑˃̵ᴗ˂̵)و\0", "ʕ•ᴥ•ʔﾉ♡\0", "✧(≖ ◡ ≖✿)\0"
+};
+
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
+
 
  			Shell Program entrance & Main Part
 	 
-	 |  					|						|
-	 V 						V 						V
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -166,9 +178,9 @@ main(int argc, char* argv[])
 	currShell.max_bgprocs = -1;
 	g_isAnyBgJobTerminated = 0;
 	g_bgJobList = CreateList(
-								&bgJobListComparator,
-								&bgJobListPrinter, 
-								&bgJobListDeleter 	);
+							&bgJobListComparator,
+							&bgJobListPrinter, 
+							&bgJobListDeleter );
 
 #ifdef GS
     rl_outstream = fopen("/dev/null", "w");
@@ -194,25 +206,24 @@ checkMainCmdArgs(int argc, char* argv[], Shell_Info *currShell)
 	if(argc > 1)
 	{
         int check = atoi(argv[1]);
-        if(check != 0)
-        {
+        if(check != 0) 
 			currShell->max_bgprocs = check;
-		}
         else 
-		{
-            printf("Invalid command line argument value\n");
-            exit(EXIT_FAILURE);
-        }
+			printf("Invalid command line argument value\n"),
+			exit(EXIT_FAILURE);
     }
 }
 
 char*
 getShellPrompt()
 {
-#ifdef DEBUG
+//#ifdef DEBUG
 	char cwdBuffer[PATH_MAX];
 	char hostBuffer[BUFFER_SIZE];
-	char* username = getenv("USER");
+	char timeBuffer[50];
+	time_t now = time(NULL);
+	struct tm *t = localtime(&now);
+	static int KAWAYI_index = 0;
 
     if( !getcwd(cwdBuffer, sizeof(cwdBuffer)) ) 
 		return fprintf(stderr, DIR_ERR), NULL;
@@ -220,33 +231,50 @@ getShellPrompt()
     if(gethostname(hostBuffer, sizeof(hostBuffer)) < 0) 
         return fprintf(stderr, "Error getting hostname\n"), NULL;
 
-    if(!username) 
-        username = "";
+	strftime(timeBuffer, sizeof(timeBuffer)-1, "%H:%M:%S %d-%m-%Y", t);
 
-	int length = snprintf(NULL, 0, 
-									ICS_GRE "[" 
-									ICS_MAG "%s@" 
-									ICS_BLU "%s:" 
-									ICS_MAG "%s" 
-									ICS_GRE "(master)~]$ " 
-									ICS_NRM, 
-									username, hostBuffer, cwdBuffer);
+	int length = snprintf(	NULL, 
+							0, 
+							ICS_NRM "\n"
+							ICS_GRE "╭─@" 
+							ICS_BLU "[%s]"
+							ICS_NRM " in "
+							ICS_MAG "~%s"
+							ICS_NRM " at " 
+							ICS_YEL "%s"
+							ICS_NRM "\n"
+							ICS_GRE "╰─%s ─➤ " 
+							ICS_NRM, 
+							hostBuffer,
+							cwdBuffer,
+							timeBuffer,
+							KAWAYI[KAWAYI_index] );
 
 	char* prompt = (char*)malloc( (length+1) * sizeof(char) ); // +1 for the null-terminator
 
     sprintf(prompt,
-			ICS_GRE "[" 
-			ICS_GRE "%s@" 
-			ICS_BLU "%s:" 
-			ICS_MAG "%s" 
-			ICS_GRE "(master)~]$ " 
+			ICS_NRM "\n"
+			ICS_GRE "╭─@" 
+			ICS_BLU "[%s]"
+			ICS_NRM " in "
+			ICS_MAG "~%s"
+			ICS_NRM " at " 
+			ICS_YEL "%s"
+			ICS_NRM "\n"
+			ICS_GRE "╰─%s ─➤ " 
 			ICS_NRM, 
-			username, hostBuffer, cwdBuffer);
+			hostBuffer,
+			cwdBuffer,
+			timeBuffer,
+			KAWAYI[KAWAYI_index] );
+
+	++KAWAYI_index;
+	KAWAYI_index = KAWAYI_index % (sizeof(KAWAYI)/sizeof(KAWAYI[0]));
 
     return prompt;
-#else
-	return ""; 
-#endif
+//#else
+	//return ""; 
+//#endif
 }
 
 void
@@ -278,7 +306,7 @@ evalShell(Shell_Info *currShell)
 			reapTerminatedBgJobs(currShell);
 
 		if(currShell->job->bg) 
-    		(currShell->job->nproc - 1 > 0) ? 
+		(currShell->job->nproc - 1 > 0) ? 
 				execMultBgProcs(currShell) : execSingleBgProcs(currShell);
 		else 
    			(currShell->job->nproc - 1 > 0) ? 
@@ -287,7 +315,7 @@ evalShell(Shell_Info *currShell)
 		if(currShell->line)
 			free(currShell->line);
 		
-		if(DEBUG_FLAG && currShell->prompt)
+		if(currShell->prompt)
 			free(currShell->prompt);
 	}
 }
@@ -319,7 +347,7 @@ freeMemory(Shell_Info *currShell)
 	if(currShell && currShell->job) free_job(currShell->job);
 	if(currShell && currShell->line) free(currShell->line);
 	if(currShell->last_dir) free(currShell->last_dir);
-	if(DEBUG_FLAG && currShell->prompt) free(currShell->prompt);
+	if(currShell->prompt) free(currShell->prompt);
 	if(g_bgJobList) clearList(g_bgJobList), free(g_bgJobList);
 	validate_input(NULL); // calling validate_input with NULL will free the memory it has allocated
 }
@@ -327,11 +355,13 @@ freeMemory(Shell_Info *currShell)
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
+
 
  			Foreground Job & Built-in commands
 	 
-	 |  					|						|
-	 V 						V 						V
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -475,6 +505,7 @@ int8_t
 exitShell(Shell_Info *currShell)
 {
 	freeMemory(currShell);
+	fprintf(stdout, "\n");
 	exit(EXIT_SUCCESS);
 }
 
@@ -487,6 +518,7 @@ changeDir(Shell_Info *currShell)
 	if(dstPath && strcmp(dstPath, "-") != 0)
 	{
 		if(currShell->last_dir) free(currShell->last_dir);
+		getcwd(cwdBuffer, sizeof(cwdBuffer));
 		currShell->last_dir = strdup(cwdBuffer);
 	}
 	// The dash '-' tells the shell to change directory to the most recent previous directory path
@@ -596,6 +628,7 @@ printUCILogo(Shell_Info *currShell)
 	fprintf(stdout, "╚█████████╔╝  ╚████████╗  ███║\n");
 	fprintf(stdout, " ╚════════╝    ╚═══════╝  ╚══╝\n");
 	fprintf(stdout, "\n");
+	return CMD_SUCC;
 }
 
 int8_t
@@ -621,11 +654,13 @@ getNumOfCmds()
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
 
- 					 Background Job
+
+ 					  Background Job
 	 
-	 |  					|						|
-	 V 						V 						V
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -743,6 +778,7 @@ execMultBgProcs(Shell_Info *currShell)
 		currProc = currProc->next_proc;
 		++procIndex;
 	}
+	
 	// It's the parent process:
 	sigprocmask(SIG_BLOCK, &mask_all, NULL);
 	currShell->pid = procsPid[0];
@@ -878,11 +914,13 @@ bgJobListDeleter(void* data)
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
+
 
  					    Redirection 	
 	 
-	 |  					|						|
-	 V 						V 						V
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -1029,11 +1067,13 @@ isRedirValid(Shell_Info *currShell)
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
 
- 					  Signal handlers	
+
+ 					   	   Pipes	
 	 
-	 |  					|						|
-	 V 						V 						V
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -1093,11 +1133,13 @@ closePipes(int pipes[][2], int pipesNum)
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
+
 
  					  Signal handlers	
 	 
-	 |  					|						|
-	 V 						V 						V
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
