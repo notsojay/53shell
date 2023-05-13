@@ -186,6 +186,7 @@ main(int argc, char* argv[])
 
 	checkMainCmdArgs(argc, argv, &currShell);
 	installSignals();
+	printUCILogo(&currShell);
 	evalShell(&currShell);
 	freeMemory(&currShell);
 
