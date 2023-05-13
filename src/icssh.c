@@ -23,11 +23,13 @@
 /*************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
+
 
 Set up the necessary functions and global variables/constants
 	 
-	 |  					|						|
-	 V 						V 						V
+	 
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -150,11 +152,13 @@ static list_t *g_bgJobList = NULL;
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
 
- 			Shell Program entrance & Main Part
+
+ 	     Shell Program entrance & Main Part
 	 
-	 |  					|						|
-	 V 						V 						V
+	 
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -166,9 +170,9 @@ main(int argc, char* argv[])
 	currShell.max_bgprocs = -1;
 	g_isAnyBgJobTerminated = 0;
 	g_bgJobList = CreateList(
-								&bgJobListComparator,
-								&bgJobListPrinter, 
-								&bgJobListDeleter 	);
+				  &bgJobListComparator,
+				  &bgJobListPrinter, 
+			          &bgJobListDeleter    );
 
 #ifdef GS
     rl_outstream = fopen("/dev/null", "w");
@@ -193,17 +197,14 @@ checkMainCmdArgs(int argc, char* argv[], Shell_Info *currShell)
 	*/
 	if(argc > 1)
 	{
-        int check = atoi(argv[1]);
-        if(check != 0)
-        {
+        	int check = atoi(argv[1]);
+		
+        	if(check != 0)
 			currShell->max_bgprocs = check;
-		}
-        else 
-		{
-            printf("Invalid command line argument value\n");
-            exit(EXIT_FAILURE);
-        }
-    }
+        	else 
+            		printf("Invalid command line argument value\n"), 
+			exit(EXIT_FAILURE);
+    	}
 }
 
 char*
@@ -214,36 +215,36 @@ getShellPrompt()
 	char hostBuffer[BUFFER_SIZE];
 	char* username = getenv("USER");
 
-    if( !getcwd(cwdBuffer, sizeof(cwdBuffer)) ) 
+    	if( !getcwd(cwdBuffer, sizeof(cwdBuffer)) ) 
 		return fprintf(stderr, DIR_ERR), NULL;
 
-    if(gethostname(hostBuffer, sizeof(hostBuffer)) < 0) 
-        return fprintf(stderr, "Error getting hostname\n"), NULL;
+	if(gethostname(hostBuffer, sizeof(hostBuffer)) < 0) 
+       		return fprintf(stderr, "Error getting hostname\n"), NULL;
 
-    if(!username) 
-        username = "";
+    	if(!username) 
+		username = "";
 
-	int length = snprintf(NULL, 0, 
-									ICS_GRE "[" 
-									ICS_MAG "%s@" 
-									ICS_BLU "%s:" 
-									ICS_MAG "%s" 
-									ICS_GRE "(master)~]$ " 
-									ICS_NRM, 
-									username, hostBuffer, cwdBuffer);
+	int length = snprintf( NULL, 0, 
+			       ICS_GRE "[" 
+			       ICS_MAG "%s@" 
+			       ICS_BLU "%s:" 
+			       ICS_MAG "%s" 
+			       ICS_GRE "(master)~]$ " 
+			       ICS_NRM, 
+			       username, hostBuffer, cwdBuffer);
 
 	char* prompt = (char*)malloc( (length+1) * sizeof(char) ); // +1 for the null-terminator
 
-    sprintf(prompt,
-			ICS_GRE "[" 
-			ICS_GRE "%s@" 
-			ICS_BLU "%s:" 
-			ICS_MAG "%s" 
-			ICS_GRE "(master)~]$ " 
-			ICS_NRM, 
+    	sprintf( prompt,
+	    		ICS_GRE "[" 
+	    		ICS_GRE "%s@" 
+	     		ICS_BLU "%s:" 
+	     		ICS_MAG "%s" 
+	     		ICS_GRE "(master)~]$ " 
+	     		ICS_NRM, 
 			username, hostBuffer, cwdBuffer);
 
-    return prompt;
+    	return prompt;
 #else
 	return ""; 
 #endif
@@ -255,14 +256,14 @@ evalShell(Shell_Info *currShell)
 	// Main loop
     // Print the prompt & wait for the user to enter commands string:
 	while(	(currShell->prompt = getShellPrompt()) != NULL && 
-			(currShell->line = readline(currShell->prompt)) != NULL ) 
+		(currShell->line = readline(currShell->prompt)) != NULL ) 
 	{
-        // MAGIC HAPPENS! Command string is parsed into a job struct
-        // Will print out error message if command string is invalid
+        	// MAGIC HAPPENS! Command string is parsed into a job struct
+        	// Will print out error message if command string is invalid
 		currShell->job = validate_input(currShell->line);
 
-        if(currShell->job == NULL)  // Command was empty string or invalid
-		{	
+        	if(currShell->job == NULL)  // Command was empty string or invalid
+		{
 			free(currShell->line);
 			continue;
 		}
@@ -278,7 +279,7 @@ evalShell(Shell_Info *currShell)
 			reapTerminatedBgJobs(currShell);
 
 		if(currShell->job->bg) 
-    		(currShell->job->nproc - 1 > 0) ? 
+    			(currShell->job->nproc - 1 > 0) ? 
 				execMultBgProcs(currShell) : execSingleBgProcs(currShell);
 		else 
    			(currShell->job->nproc - 1 > 0) ? 
@@ -327,11 +328,13 @@ freeMemory(Shell_Info *currShell)
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
 
- 			Foreground Job & Built-in commands
-	 
-	 |  					|						|
-	 V 						V 						V
+ 	
+	    Foreground Job & Built-in commands
+	
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -347,19 +350,19 @@ execSingleFgProcs(Shell_Info *currShell)
 	if( execBuiltInCmd(currShell) != CMD_NOT_FOUND ||
 		// The same file cannot be shared between any two types of redirection 
 		// Redirection of the same stream can not occur to 2 different places			
-		!isRedirValid(currShell) ||
-		!openFiles(currShell, redir_fds) )
+	    !isRedirValid(currShell) ||
+	    !openFiles(currShell, redir_fds) )
 	{
 		if(currShell->job) free_job(currShell->job), currShell->job = NULL;
 		closeFiles(redir_fds);
 		return;
 	}
 	
-    // Create the child proccess:
+    	// Create the child proccess:
 	currShell->pid = doFork(currShell);
 	// If zero, then it's the child process:
 	if(currShell->pid == CHILD)
-    {
+   	{
 		setpgid(0, 0);
 		setRedirs(redir_fds);
 		closeFiles(redir_fds);
@@ -367,12 +370,10 @@ execSingleFgProcs(Shell_Info *currShell)
 		proc_info* currProc = currShell->job->procs;
 		currShell->exec_result = execvp(currProc->cmd, currProc->argv);
 		if(currShell->exec_result < 0) // Exec error checking:
-		{
-			printf(EXEC_ERR, currProc->cmd);
-			exit(EXIT_FAILURE);
-		}
+			printf(EXEC_ERR, currProc->cmd), exit(EXIT_FAILURE);
 		// Child process ends here.
 	}
+	// Parent here
 	closeFiles(redir_fds);
 	// As the parent, wait for the foreground job to finish
 	currShell->wait_result = waitpid(currShell->pid, &currShell->exit_status, 0);
@@ -398,7 +399,7 @@ execMultFgProcs(Shell_Info *currShell)
 	proc_info *currProc = currShell->job->procs;
 
 	if( !isRedirValid(currShell) ||
-		!openFiles(currShell, redir_fds) )							
+	    !openFiles(currShell, redir_fds) )							
 	{
 		if(currShell->job) free_job(currShell->job), currShell->job = NULL;
 		closeFiles(redir_fds);
@@ -434,10 +435,7 @@ execMultFgProcs(Shell_Info *currShell)
 
 			currShell->exec_result = execvp(currProc->cmd, currProc->argv);
 			if(currShell->exec_result < 0)
-			{
-				printf(EXEC_ERR, currProc->cmd);
-				exit(EXIT_FAILURE);
-			}
+				printf(EXEC_ERR, currProc->cmd), exit(EXIT_FAILURE);
 		}
 		// It's the parent process:
 		currProc = currProc->next_proc;
@@ -545,6 +543,7 @@ moveToForeground(Shell_Info *currShell)
 	if( *((currShell->job->procs->argv)+1) )
 	{
 		target_pid = (pid_t)atoi( *((currShell->job->procs->argv)+1) );
+		
 		findBgEntry(&current, &previous, target_pid);
 	
 		if(!current)
@@ -621,11 +620,13 @@ getNumOfCmds()
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
 
- 					 Background Job
-	 
-	 |  					|						|
-	 V 						V 						V
+
+ 		      Background Job
+
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -642,9 +643,9 @@ execSingleBgProcs(Shell_Info *currShell)
 		!isRedirValid(currShell) ||
 		!openFiles(currShell, redir_fds) ) 
 	{
-    	if(currShell->job) free_job(currShell->job), currShell->job = NULL;
+    		if(currShell->job) free_job(currShell->job), currShell->job = NULL;
 		closeFiles(redir_fds);
-    	return;
+    		return;
 	}
 
 	sigfillset(&mask_all);
@@ -656,7 +657,7 @@ execSingleBgProcs(Shell_Info *currShell)
 	currShell->pid = doFork(currShell);
 	// If zero, then it's the child process:
 	if(currShell->pid == CHILD)
-    {
+    	{
 		sigprocmask(SIG_SETMASK, &prev_one, NULL);
 		setpgid(0,0);
 		setRedirs(redir_fds);
@@ -665,10 +666,7 @@ execSingleBgProcs(Shell_Info *currShell)
 		proc_info* currProc = currShell->job->procs;
 		currShell->exec_result = execvp(currProc->cmd, currProc->argv);
 		if(currShell->exec_result < 0)
-		{
-			printf(EXEC_ERR, currProc->cmd);
-			exit(EXIT_FAILURE);
-		}
+			printf(EXEC_ERR, currProc->cmd), exit(EXIT_FAILURE);
 		// Child process ends here
 	}
 	// It's the parent process:
@@ -734,10 +732,7 @@ execMultBgProcs(Shell_Info *currShell)
 
 			currShell->exec_result = execvp(currProc->cmd, currProc->argv);
 			if(currShell->exec_result < 0) // Exec error checking:
-			{
-				printf(EXEC_ERR, currProc->cmd);
-				exit(EXIT_FAILURE);
-			}
+				printf(EXEC_ERR, currProc->cmd), exit(EXIT_FAILURE);
 		}
 		// It's the parent process:
 		currProc = currProc->next_proc;
@@ -758,11 +753,11 @@ reapTerminatedBgJobs(Shell_Info *currShell)
 {
 	sigset_t mask_all, prev_one;
 
-    sigfillset(&mask_all);
+   	sigfillset(&mask_all);
 	sigprocmask(SIG_BLOCK, &mask_all, &prev_one);
 
-    while( (currShell->wait_result = waitpid(-1, &currShell->exit_status, WNOHANG)) > 0 )
-	{
+   	 while( (currShell->wait_result = waitpid(-1, &currShell->exit_status, WNOHANG)) > 0 )
+	 {
 		if(currShell->wait_result < 0) 
 		{
 			printf(WAIT_ERR);
@@ -770,9 +765,9 @@ reapTerminatedBgJobs(Shell_Info *currShell)
 			exit(EXIT_FAILURE);
 		}
 		debug_print("(%d) START\n", currShell->wait_result);
-        // Remove the terminated background job from the list and print a message
-        removeBgEntryFromList(currShell->wait_result);
-    }
+        	// Remove the terminated background job from the list and print a message
+        	removeBgEntryFromList(currShell->wait_result);
+	 }
 
 	g_isAnyBgJobTerminated = 0;
 	debug_print("(%d) END:\n\t g_isAnyBgJobTerminated = %d\n", currShell->wait_result, g_isAnyBgJobTerminated);
@@ -809,11 +804,10 @@ removeBgEntryFromList(pid_t pid)
 	else if(current == g_bgJobList->head) g_bgJobList->head = g_bgJobList->head->next;
 	else previous->next = current->next;
 
-	fprintf(
-			stdout,
-			BG_TERM,
-			((bgentry_t*)current->data)->pid,
-			((bgentry_t*)current->data)->job->line );
+	fprintf( stdout,
+		 BG_TERM,
+		 ((bgentry_t*)current->data)->pid,
+		 ((bgentry_t*)current->data)->job->line );
 
 	g_bgJobList->deleter(current->data);
 	free(current);
@@ -827,11 +821,10 @@ clearList()
 	if(!g_bgJobList || g_bgJobList->length == 0) return;
 	while(g_bgJobList->head != NULL)
 	{
-		fprintf(
-				stdout,
-				BG_TERM,
-				((bgentry_t*)g_bgJobList->head->data)->pid,
-				((bgentry_t*)g_bgJobList->head->data)->job->line );
+		fprintf( stdout,
+			 BG_TERM,
+			 ((bgentry_t*)g_bgJobList->head->data)->pid,
+			 ((bgentry_t*)g_bgJobList->head->data)->job->line );
 
 		RemoveFromHead(g_bgJobList);
 	}
@@ -878,11 +871,13 @@ bgJobListDeleter(void* data)
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
 
- 					    Redirection 	
+
+ 		       Redirection 	
 	 
-	 |  					|						|
-	 V 						V 						V
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -951,10 +946,9 @@ openFiles(Shell_Info *currShell, int redir_fds[])
 	// fd for stdout:
 	if(currShell->job->out_file)
 	{
-		if( (redir_fds[1] = open(
-								currShell->job->out_file,
-								O_WRONLY | O_CREAT | O_TRUNC, 
-								S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH )) == -1 )
+		if( (redir_fds[1] = open( currShell->job->out_file,
+					  O_WRONLY | O_CREAT | O_TRUNC, 
+					  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH )) == -1 )
 		{
 			fprintf(stderr, RD_ERR);
 			return false;
@@ -963,10 +957,9 @@ openFiles(Shell_Info *currShell, int redir_fds[])
 	// fd for stderr:
 	if(currShell->job->procs->err_file)
 	{
-		if( (redir_fds[2] = open(
-								currShell->job->procs->err_file,
-								O_WRONLY | O_CREAT | O_TRUNC,
-								S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH )) == -1 )
+		if( (redir_fds[2] = open( currShell->job->procs->err_file,
+					  O_WRONLY | O_CREAT | O_TRUNC,
+					  S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH )) == -1 )
 		{
 			fprintf(stderr, RD_ERR);
 			return false;
@@ -1013,9 +1006,9 @@ isRedirValid(Shell_Info *currShell)
 		proc_info *currProc = currShell->job->procs->next_proc;
 		while(currProc)
 		{
-			if( (errFile && currProc->err_file && strcmp(errFile, currProc->err_file) == 0 ) ||
-			( inFile && currProc->err_file && strcmp(inFile, currProc->err_file) == 0 ) ||
-			( outFile && currProc->err_file && strcmp(outFile, currProc->err_file) == 0 ))
+			if( (errFile && currProc->err_file && strcmp(errFile, currProc->err_file) == 0) ||
+			    (inFile && currProc->err_file && strcmp(inFile, currProc->err_file) == 0) ||
+			    (outFile && currProc->err_file && strcmp(outFile, currProc->err_file) == 0 ) )
 			{
 				fprintf(stderr, RD_ERR);
 				return false;
@@ -1029,11 +1022,13 @@ isRedirValid(Shell_Info *currShell)
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
 
- 					  Signal handlers	
-	 
-	 |  					|						|
-	 V 						V 						V
+
+ 		          Pipes	
+
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -1093,11 +1088,13 @@ closePipes(int pipes[][2], int pipesNum)
 /************************************************************
 *************************************************************
 *************************************************************
+*************************************************************
 
- 					  Signal handlers	
+
+ 		      Signal handlers	
 	 
-	 |  					|						|
-	 V 						V 						V
+
+*************************************************************
 *************************************************************
 *************************************************************
 ************************************************************/
@@ -1106,12 +1103,12 @@ installSignals()
 {
 	struct sigaction sa;
 	memset( &sa, 0, sizeof(struct sigaction) );
-    sa.sa_handler = sigchld_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART; // Automatically restart interrupted system calls
+	sa.sa_handler = sigchld_handler;
+	sigemptyset(&sa.sa_mask);
+    	sa.sa_flags = SA_RESTART; // Automatically restart interrupted system calls
 
 	// Install SIGCHLD handler:
-    if(sigaction(SIGCHLD, &sa, NULL) == -1) 
+    	if(sigaction(SIGCHLD, &sa, NULL) == -1) 
 		reportUnixError("Failed to set signal handler");
 
 	// Install SIGUSR2 handler:
@@ -1134,7 +1131,7 @@ sigchld_handler(int sigNum)
 	int olderrno = errno;
 	sigset_t mask_all, prev_one;
 	sigfillset(&mask_all);
-    sigprocmask(SIG_BLOCK, &mask_all, &prev_one);
+    	sigprocmask(SIG_BLOCK, &mask_all, &prev_one);
 
 	g_isAnyBgJobTerminated = 1;
 
@@ -1148,15 +1145,15 @@ sigusr2_handler(int sigNum)
 	int olderrno = errno;
 	sigset_t mask_all, prev_one;
 	sigfillset(&mask_all);
-    sigprocmask(SIG_BLOCK, &mask_all, &prev_one);
+    	sigprocmask(SIG_BLOCK, &mask_all, &prev_one);
 
 	sio_puts(G_WEEKDAY[g_currWeekDay]); sio_puts(" ");
-    sio_puts(G_MONTH[g_currMonth]); sio_puts(" ");
-    sio_put_time(g_currMonthday, 2); sio_puts(" "); // Print day with width 2
-    sio_put_time(g_currHour, 2); sio_puts(":"); // Print hour with width 2
-    sio_put_time(g_currMin, 2); sio_puts(":"); // Print minute with width 2
-    sio_put_time(g_currSec, 2); sio_puts(" "); // Print second with width 2
-    sio_putl(g_currYear + 1900); sio_puts("\n");
+    	sio_puts(G_MONTH[g_currMonth]); sio_puts(" ");
+    	sio_put_time(g_currMonthday, 2); sio_puts(" "); // Print day with width 2
+   	sio_put_time(g_currHour, 2); sio_puts(":"); // Print hour with width 2
+    	sio_put_time(g_currMin, 2); sio_puts(":"); // Print minute with width 2
+   	sio_put_time(g_currSec, 2); sio_puts(" "); // Print second with width 2
+    	sio_putl(g_currYear + 1900); sio_puts("\n");
 
 	sigprocmask(SIG_SETMASK, &prev_one, NULL);
 	errno = olderrno;
@@ -1166,85 +1163,85 @@ void
 updateCurrentTime()
 {
 	struct timespec now;
-    struct tm current_time;
+    	struct tm current_time;
     
 	// Retrieves the current time of the specified clock:
-    if(clock_gettime(CLOCK_REALTIME, &now) == -1) 
+    	if(clock_gettime(CLOCK_REALTIME, &now) == -1) 
 		reportUnixError("Error getting current time");
 
 	// Convert the given time since epoch to the corresponding local time representation:
-    if(localtime_r(&(now.tv_sec), &current_time) == NULL) 
+    	if(localtime_r(&(now.tv_sec), &current_time) == NULL) 
 		reportUnixError("Error converting to local time");
     
-    g_currSec = current_time.tm_sec;
-    g_currMin = current_time.tm_min;
-    g_currHour = current_time.tm_hour;
-    g_currMonthday = current_time.tm_mday;
-    g_currMonth = current_time.tm_mon;
-    g_currYear = current_time.tm_year;
-    g_currWeekDay = current_time.tm_wday;
+   	g_currSec = current_time.tm_sec;
+    	g_currMin = current_time.tm_min;
+   	g_currHour = current_time.tm_hour;
+    	g_currMonthday = current_time.tm_mday;
+    	g_currMonth = current_time.tm_mon;
+    	g_currYear = current_time.tm_year;
+    	g_currWeekDay = current_time.tm_wday;
 }
 
 ssize_t
 sio_puts(const char str[])
 {
-    return write(STDERR_FILENO, str, strlen(str));
+	return write(STDERR_FILENO, str, strlen(str));
 }
 
 ssize_t
 sio_putl(const long val)
 {
-    char str[BUFFER_SIZE];
-    sio_ltoa(val, str, 10);
-    return sio_puts(str);
+    	char str[BUFFER_SIZE];
+    	sio_ltoa(val, str, 10);
+    	return sio_puts(str);
 }
 
 void
 sio_put_time(long val, int width)
 {
 	char str[BUFFER_SIZE];
-    sio_ltoa(val, str, 10);
-    int len = strlen(str);
-    for(int i = 0; i < width - len; ++i) 
+    	sio_ltoa(val, str, 10);
+    	int len = strlen(str);
+    	for(int i = 0; i < width - len; ++i) 
 	{
 		sio_puts("0");
 	}
-    sio_puts(str);
+    	sio_puts(str);
 }
 
 void
 sio_error(const char str[])
 {
-    sio_puts(str);
-    _exit(EXIT_FAILURE);
+    	sio_puts(str);
+    	_exit(EXIT_FAILURE);
 }
 
 void
 sio_reverse(char str[])
 {
-    int ch, i, j;
-    for(i = 0, j = strlen(str)-1; i < j; ++i, --j)
+    	int ch, i, j;
+    	for(i = 0, j = strlen(str)-1; i < j; ++i, --j)
 	{
-        ch = str[i];
-        str[i] = str[j];
-        str[j] = ch;
-    }
+        	ch = str[i];
+        	str[i] = str[j];
+        	str[j] = ch;
+    	}
 }
 
 void
 sio_ltoa(long val, char str[], int base)
 {
-    int currDigit, index = 0;
-    int8_t isNegative = val < 0;
-    if(isNegative) val = -val;
+    	int currDigit, index = 0;
+    	int8_t isNegative = val < 0;
+    	if(isNegative) val = -val;
 
-    do 
+    	do 
 	{
-        currDigit = val % base;
-        str[index++] = (currDigit < 10) ? currDigit + '0' : currDigit - 10 + 'a';
-    } while( (val /= base) > 0 );
+        	currDigit = val % base;
+        	str[index++] = (currDigit < 10) ? currDigit + '0' : currDigit - 10 + 'a';
+    	} while( (val /= base) > 0 );
 
-    if(isNegative) str[index++] = '-';
-    str[index] = '\0';
-    sio_reverse(str);
+    	if(isNegative) str[index++] = '-';
+    	str[index] = '\0';
+    	sio_reverse(str);
 }
