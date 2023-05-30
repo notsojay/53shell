@@ -1,100 +1,11 @@
 #include "icssh.h"
-#include "linkedlist.h"
-#include "helpers.h"
-#include "debug.h"
 
 #include <readline/readline.h>
 #include <stdint.h>
 #include <limits.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #include <signal.h>
-#include <time.h>
-#include <unistd.h>
 #include <errno.h>
-#include <string.h>
 
-// #ifdef DEBUG
-// #define DEBUG_FLAG 1
-// #else
-// #define DEBUG_FLAG 0
-// #endif
-
-/*************************************************************
-*************************************************************
-*************************************************************
-*************************************************************
-
-
-						   Set up
-	 
-*************************************************************
-*************************************************************
-*************************************************************
-************************************************************/
-
-// Main part:
-void checkMainCmdArgs(int argc, char* argv[], Shell_Info *currShell);
-char* getShellPrompt();
-void evalShell(Shell_Info *currShell);
-pid_t doFork(Shell_Info *currShell);
-void reportUnixError(char *msg);
-void freeMemory(Shell_Info *currShell);
-
-// Foreground Job & Built-in commands part: 
-void execSingleFgProcs(Shell_Info *currShell);
-void execMultFgProcs(Shell_Info *currShell);
-int8_t execBuiltInCmd(Shell_Info *currShell);
-int8_t exitShell(Shell_Info *currShell);
-int8_t changeDir(Shell_Info *currShell);
-int8_t printCurrDir(Shell_Info *currShell);
-int8_t printLastChldProcExitStatus(Shell_Info *currShell);
-int8_t listRunnBgJobs(Shell_Info *currShell);
-int8_t moveToForeground(Shell_Info *currShell);
-int8_t printUCILogo(Shell_Info *currShell);
-int8_t printNumRunnBgJobs(Shell_Info *currShell);
-int8_t printCurrSigchldFlag(Shell_Info *currShell);
-size_t getNumOfCmds();
-
-// Background Job part: 
-void execSingleBgProcs(Shell_Info *currShell);
-void execMultBgProcs(Shell_Info *currShell);
-void reapTerminatedBgJobs(Shell_Info *currShell);
-bool isReachMaxBgProcs(int count, int maxBgProcs);
-void addBgEntryToList(Shell_Info *currShell);
-void removeBgEntryFromList(pid_t pid);
-void clearList();
-void findBgEntry(node_t **current, node_t **previous, pid_t pid);
-int bgJobListComparator(const void *time1, const void *time2);
-void bgJobListPrinter(void *data, void *fp);
-void bgJobListDeleter(void *data);
-
-// Redirection part:
-void setRedirs(int redir_fds[]);
-void setInRedir(int redir_fds[]);
-void setOutRedir(int redir_fds[]);
-void setErrRedir(int redir_fds[]);
-bool openFiles(Shell_Info *currShell, int redir_fds[]);
-void closeFiles(int redir_fds[]);
-bool isRedirValid(Shell_Info *currShell);
-
-// Pipe part:
-void initPipes(Shell_Info *currShell, int pipes[][2], int pipesNum);
-void setOutPipe(int pipes[][2], int pipesNum, int procIndex);
-void setInPipe(int pipes[][2], int pipesNum, int procIndex);
-void closePipes(int pipes[][2], int pipesNum);
-
-// Signal handlers part:
-void installSignals();
-void sigchld_handler(int sigNum);
-void sigusr2_handler(int sigNum);
-void updateCurrentTime();
-void sio_error(const char str[]);
-ssize_t sio_putl(const long val);
-void sio_put_time(long val, int width);
-ssize_t sio_puts(const char str[]);
-void sio_ltoa(long val, char str[], int base);
-void sio_reverse(char str[]);
 
 // A flag Identifies whether there are currently terminated background processes that need to be reap:
 static volatile sig_atomic_t g_isAnyBgJobTerminated;
@@ -148,13 +59,14 @@ static const int8_t (*G_BUILTIN_CMD_MAP[])(Shell_Info*) = {
 // Global variable for storing information of background jobs in running:
 static list_t *g_bgJobList = NULL;
 
-static const char *KAWAYI[] = {
+static const char *G_KAWAYI[] = {
 	"(ﾉ˚Д˚)ﾉ\0", "ლ(╹◡╹ლ)\0", "ヾ(⁍̴̆◡⁍̴̆.)ﾉ\0", 
 	
 	"(❁´◡`❁)*\0", "(┛ಠ_ಠ)┛彡\0", "ヾ(ಠل͜ಠ)ﾉ\0",
 	
 	"(๑˃̵ᴗ˂̵)و\0", "ʕ•ᴥ•ʔﾉ♡\0", "✧(≖ ◡ ≖✿)\0"
 };
+
 
 /************************************************************
 *************************************************************
@@ -220,7 +132,6 @@ checkMainCmdArgs(int argc, char* argv[], Shell_Info *currShell)
 char*
 getShellPrompt()
 {
-//#ifdef DEBUG
 	char cwdBuffer[PATH_MAX];
 	char hostBuffer[BUFFER_SIZE];
 	char timeBuffer[50];
@@ -251,7 +162,7 @@ getShellPrompt()
 							hostBuffer,
 							cwdBuffer,
 							timeBuffer,
-							KAWAYI[KAWAYI_index] );
+							G_KAWAYI[KAWAYI_index] );
 
 	char* prompt = (char*)malloc( (length+1) * sizeof(char) ); // +1 for the null-terminator
 
@@ -269,15 +180,12 @@ getShellPrompt()
 			hostBuffer,
 			cwdBuffer,
 			timeBuffer,
-			KAWAYI[KAWAYI_index] );
+			G_KAWAYI[KAWAYI_index] );
 
 	++KAWAYI_index;
-	KAWAYI_index = KAWAYI_index % (sizeof(KAWAYI)/sizeof(KAWAYI[0]));
+	KAWAYI_index = KAWAYI_index % (sizeof(G_KAWAYI)/sizeof(G_KAWAYI[0]));
 
     return prompt;
-//#else
-	//return ""; 
-//#endif
 }
 
 void
@@ -694,7 +602,7 @@ execSingleBgProcs(Shell_Info *currShell)
 	
 	// If zero, then it's the child process:
 	if(currShell->pid == CHILD)
-    	{
+    {
 		sigprocmask(SIG_SETMASK, &prev_one, NULL);
 		setpgid(0,0);
 		setRedirs(redir_fds);
@@ -805,7 +713,7 @@ reapTerminatedBgJobs(Shell_Info *currShell)
 		}
 		debug_print("(%d) START\n", currShell->wait_result);
         	// Remove the terminated background job from the list and print a message
-        	removeBgEntryFromList(currShell->wait_result);
+        removeBgEntryFromList(currShell->wait_result);
 	 }
 
 	g_isAnyBgJobTerminated = 0;
